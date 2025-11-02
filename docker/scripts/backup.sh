@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script de sauvegarde de la base de données iZola API
+# Script de sauvegarde de la base de données Katabase GraphQL API
 # Usage: ./backup.sh [nom_optionnel]
 
 set -e

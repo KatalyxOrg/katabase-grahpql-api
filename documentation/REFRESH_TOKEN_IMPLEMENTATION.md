@@ -1,6 +1,6 @@
 # Refresh Token Implementation
 
-This document describes the refresh token mechanism implemented in the iZola API.
+This document describes the refresh token mechanism implemented in the Katabase GraphQL API.
 
 ## Overview
 
@@ -304,7 +304,7 @@ Potential improvements for the future:
 
 ## Testing
 
-Use the Bruno collection files in `bruno/iZola/Authentication/`:
+Use the Bruno collection files in `bruno/Katabase GraphQL/Authentication/`:
 
 1. **Login.bru** - Get initial tokens
 2. **Refresh Token.bru** - Test token refresh
@@ -329,4 +329,4 @@ The refresh token mechanism provides:
 ✅ **Auditability** - Full tracking of token usage and metadata  
 ✅ **Standards Compliance** - Follows OAuth 2.0 best practices
 
-This implementation balances security and usability while maintaining compatibility with the existing iZola architecture.
+This implementation balances security and usability while maintaining compatibility with the existing Katabase GraphQL architecture.

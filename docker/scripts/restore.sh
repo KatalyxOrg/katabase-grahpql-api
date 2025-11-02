@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script de restauration de la base de données iZola API
+# Script de restauration de la base de données Katabase GraphQL API
 # Usage: ./restore.sh <nom_de_la_sauvegarde>
 
 set -e

@@ -1,4 +1,4 @@
-# iZola API Testing Guide
+# Katabase GraphQL API Testing Guide
 
 ## 📊 Current Test Coverage Status
 
@@ -16,7 +16,7 @@
 
 ## 🎯 Test Philosophy
 
-The iZola test suite follows **Clean Architecture** principles with three distinct testing layers:
+The Katabase GraphQL test suite follows **Clean Architecture** principles with three distinct testing layers:
 
 1. **Unit Tests** (`*_test.go`): Fast, isolated, mock-based tests for business logic
 2. **Integration Tests** (`integration_test.go` with `//go:build integration`): Real database interactions
@@ -1275,7 +1275,7 @@ Create `.git/hooks/pre-commit`:
 
 ```bash
 #!/bin/bash
-# Pre-commit hook for iZola API
+# Pre-commit hook for Katabase GraphQL API
 
 echo "🧪 Running authentication tests..."
 go test ./internal/authentication/... -cover

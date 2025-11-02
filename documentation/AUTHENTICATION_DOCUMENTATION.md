@@ -1,10 +1,10 @@
 # Authentication Mechanism Documentation
 
-This document describes the authentication system implemented in the iZola API.
+This document describes the authentication system implemented in the Katabase GraphQL API.
 
 ## Overview
 
-The iZola API uses a **dual-token JWT authentication system** combining short-lived access tokens with long-lived refresh tokens. This approach balances security (minimal exposure of credentials) with user experience (persistent sessions without frequent re-authentication).
+The Katabase GraphQL API uses a **dual-token JWT authentication system** combining short-lived access tokens with long-lived refresh tokens. This approach balances security (minimal exposure of credentials) with user experience (persistent sessions without frequent re-authentication).
 
 ### Key Features
 
@@ -585,9 +585,9 @@ CREATE INDEX idx_refresh_tokens_expires_at ON refresh_tokens(expires_at);  -- Fo
 
 The Authentication folder contains ready-to-use tests:
 
-1. **[Create User.bru](bruno/iZola/Authentication/Create User.bru)** - User registration
+1. **[Create User.bru](bruno/Katabase GraphQL/Authentication/Create User.bru)** - User registration
 2. **Login.bru** - Initial authentication
-3. **[Refresh Token.bru](bruno/iZola/Authentication/Refresh Token.bru)** - Token refresh
+3. **[Refresh Token.bru](bruno/Katabase GraphQL/Authentication/Refresh Token.bru)** - Token refresh
 
 **Test Scenarios:**
 
@@ -717,7 +717,7 @@ type Mutation {
 
 ## Summary
 
-The iZola authentication system provides:
+The Katabase GraphQL authentication system provides:
 
 ✅ **Security:** bcrypt password hashing, JWT with rotation, reuse detection, RBAC  
 ✅ **User Experience:** Persistent sessions (30 days), automatic refresh, minimal re-authentication  
@@ -735,4 +735,4 @@ The iZola authentication system provides:
 - Schema: root.graphqls
 - Config: config.go, config.yml
 
-This implementation balances security, usability, and maintainability while remaining compatible with the broader iZola architecture (see Copilot Instructions).
+This implementation balances security, usability, and maintainability while remaining compatible with the broader Katabase GraphQL architecture (see Copilot Instructions).
