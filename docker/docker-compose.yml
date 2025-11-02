@@ -1,0 +1,62 @@
+version: '3.8'
+name: katabasegql-api
+
+services:
+  # api:
+  #   build:
+  #     context: ..
+  #     dockerfile: docker/Dockerfile.prod
+  #   container_name: katabasegql-api-dev
+  #   restart: unless-stopped
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+  #   volumes:
+  #     # Mount du code source pour hot reload
+  #     - ../config.yml:/root/config.yml:ro
+  #     - api_data:/data
+  #     - go_modules:/go/pkg/mod
+  #   environment:
+  #     # Configuration pour développement
+  #     CGO_ENABLED: 0
+  #   ports:
+  #     - "8080:8080"
+  #   working_dir: /root
+  #   networks:
+  #     - katabasegql-dev-network
+
+  db:
+    image: postgres:15
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: katabasegql
+      POSTGRES_PASSWORD: katabasegql
+      POSTGRES_DB: katabasegql
+    networks:
+      - katabasegql-dev-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U katabasegql -d katabasegql"]
+    ports:
+      - "5432:5432"
+  dbAdmin: 
+    image: dpage/pgadmin4:8
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - katabasegql-dev-network
+    environment:
+      PGADMIN_DEFAULT_EMAIL: contact@katabasegql.com
+      PGADMIN_DEFAULT_PASSWORD: katabasegql
+    ports:
+      - "5050:80"
+
+volumes:
+  postgres_data:
+  pgadmin_data:
+  api_data:
+  go_modules:
+
+networks:
+  katabasegql-dev-network:
+    driver: bridge

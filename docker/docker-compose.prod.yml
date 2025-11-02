@@ -1,0 +1,108 @@
+name: katabasegql-api-prod
+
+services:
+  katabasegql-api:
+    # Cette ligne sera remplacée dynamiquement par l'image du registry
+    image: ghcr.io/katalyxorg/katabasegql-api:latest
+    container_name: katabasegql-api-prod
+    restart: unless-stopped
+    depends_on:
+      katabasegql-api-db:
+        condition: service_healthy
+    networks:
+      - katabasegql-api-network
+    ports:
+      - "8080:8080"
+    volumes:
+      - katabasegql-api-data:/data
+      - ./config.prod.yml:/root/config.yml:ro
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/query"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  katabasegql-api-db:
+    image: postgres:15.8-alpine3.20
+    container_name: katabasegql-api-db-prod
+    restart: unless-stopped
+    networks:
+      - katabasegql-api-network
+    environment:
+      POSTGRES_USER: echo
+      POSTGRES_PASSWORD: "POSTGRES_PASSWORD_PLACEHOLDER"
+      POSTGRES_DB: echo
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - katabasegql-api-postgres:/var/lib/postgresql/data
+      - ./backups:/backups
+    ports:
+      # Port exposé seulement pour l'administration
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U echo -d echo"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Optional: pgAdmin pour l'administration de la base de données
+  katabasegql-api-pgadmin:
+    image: dpage/pgadmin4:8.12
+    container_name: katabasegql-api-pgadmin-prod
+    restart: unless-stopped
+    depends_on:
+      katabasegql-api-db:
+        condition: service_healthy
+    networks:
+      - katabasegql-api-network
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "PGADMIN_EMAIL_PLACEHOLDER"
+      PGADMIN_DEFAULT_PASSWORD: "PGADMIN_PASSWORD_PLACEHOLDER"
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    volumes:
+      - katabasegql-api-pgadmin:/var/lib/pgadmin
+    ports:
+      - "5050:80"
+    profiles:
+      - admin  # Service optionnel, démarré avec: docker compose --profile admin up
+
+  # Service de sauvegarde automatique
+  katabasegql-api-backup:
+    image: postgres:15.8-alpine3.20
+    container_name: katabasegql-api-backup-prod
+    restart: "no"
+    depends_on:
+      katabasegql-api-db:
+        condition: service_healthy
+    networks:
+      - katabasegql-api-network
+    environment:
+      PGUSER: echo
+      PGPASSWORD: "POSTGRES_PASSWORD_PLACEHOLDER"
+      PGHOST: katabasegql-api-db
+      PGDATABASE: echo
+    volumes:
+      - ./backups:/backups
+      - ./scripts:/scripts
+    command: >
+      sh -c "
+        echo 'Service de sauvegarde configuré. Utiliser docker compose exec katabasegql-api-backup /scripts/backup.sh pour créer une sauvegarde manuelle'
+        && tail -f /dev/null
+      "
+    profiles:
+      - backup  # Service optionnel pour les sauvegardes
+
+volumes:
+  katabasegql-api-postgres:
+    driver: local
+  katabasegql-api-data:
+    driver: local
+  katabasegql-api-pgadmin:
+    driver: local
+
+networks:
+  katabasegql-api-network:
+    driver: bridge

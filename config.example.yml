@@ -1,0 +1,20 @@
+port: "8080"
+dataPath: "./data"
+baseURL: "http://localhost:8080"
+applicationURL: "http://localhost:3000"
+
+jwt:
+  secret: "your-jwt-secret"
+  accessTokenTTL: 30m
+  refreshTokenTTL: 720h # 30 days
+
+maps:
+  apiKey: "your-maps-api-key"
+
+emailCredentials:
+  host: "smtp.gmail.com"
+  port: 587
+  email: "your-email@example.com"
+  password: "your-email-password"
+
+connectionString: "host=localhost user=username password=password dbname=echocircle port=5432 sslmode=disable"

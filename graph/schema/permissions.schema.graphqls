@@ -1,0 +1,18 @@
+type Permission {
+  id: ID!
+  createdAt: Time!
+
+  name: String!
+
+  readableName: String
+  description: String
+  category: String
+}
+
+# INPUTS
+
+input NewPermissionOverrideInput {
+  userID: ID!
+  permissionID: ID!
+  isGranted: Boolean!
+}

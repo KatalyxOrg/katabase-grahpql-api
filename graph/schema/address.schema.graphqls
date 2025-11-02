@@ -1,0 +1,32 @@
+type Address {
+  number: String!
+  route: String!
+  optionalRoute: String
+  city: String!
+  zipCode: String!
+  country: String!
+
+  coordinates: [Float!]!
+}
+
+input NewAddressInput {
+  number: Int!
+  route: String!
+  optionalRoute: String
+  city: String!
+  zipCode: String!
+  country: String!
+
+  coordinates: [Float!]!
+}
+
+input UpdateAddressInput {
+  number: Int
+  route: String
+  optionalRoute: String
+  city: String
+  zipCode: String
+  country: String
+
+  coordinates: [Float!]
+}

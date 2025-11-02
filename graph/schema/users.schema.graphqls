@@ -1,0 +1,74 @@
+# TYPES
+type LoginResult {
+  user: User!
+  token: String!
+  refreshToken: String!
+  permissions: [String!]!
+  roles: [String!]!
+}
+
+type User {
+  id: ID!
+  createdAt: Time!
+
+  email: String!
+
+  userProfile: UserProfile @goField(forceResolver: true)
+
+  permissions: [String!]!
+  roles: [String!]!
+}
+
+type UserProfile {
+  id: ID!
+  createdAt: Time!
+
+  avatarName: String
+
+  firstName: String!
+  lastName: String
+
+  phone: String
+
+  addressID: ID
+  address: Address @goField(forceResolver: true)
+}
+
+# INPUTS
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+input NewUserInput {
+  email: String!
+  password: String
+  userProfile: NewUserProfileInput!
+}
+
+input NewUserProfileInput {
+  firstName: String!
+  lastName: String
+
+  avatar: Upload
+
+  phone: String
+
+  address: NewAddressInput
+}
+
+input UpdateUserInput {
+  email: String
+  userProfile: UpdateUserProfileInput
+}
+
+input UpdateUserProfileInput {
+  firstName: String
+  lastName: String
+
+  avatar: Upload
+
+  phone: String
+
+  address: UpdateAddressInput
+}

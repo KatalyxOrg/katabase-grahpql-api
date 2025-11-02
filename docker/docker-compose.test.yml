@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  katabasegql-api-test-db:
+    image: postgres:15.8-alpine3.20
+    container_name: katabasegql-api-test-db
+    environment:
+      POSTGRES_DB: katabasegql_test
+      POSTGRES_USER: katabasegql_test
+      POSTGRES_PASSWORD: katabasegql_test_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - katabasegql-api-test-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U katabasegql_test"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  katabasegql-api-test-db-data:

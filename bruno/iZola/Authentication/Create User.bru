@@ -1,0 +1,38 @@
+meta {
+  name: Create User
+  type: graphql
+  seq: 1
+}
+
+post {
+  url: {{host}}/query
+  body: graphql
+  auth: inherit
+}
+
+body:graphql {
+  mutation CreateUser($input: NewUserInput!) {
+    createUser(input: $input) {
+      id
+    }
+  }
+  
+}
+
+body:graphql:vars {
+  {
+    "input": {
+      "email": "victor@katabasegql.com",
+      "password": "dE8bdTUE",
+        "userProfile": {
+          "firstName": "Victor",
+            "lastName": "DENIS"
+        }
+    }
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

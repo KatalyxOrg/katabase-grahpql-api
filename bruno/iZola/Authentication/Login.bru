@@ -1,0 +1,62 @@
+meta {
+  name: Login
+  type: graphql
+  seq: 2
+}
+
+post {
+  url: {{host}}/query
+  body: graphql
+  auth: none
+}
+
+body:graphql {
+  mutation Login($input: LoginInput!) {
+    login(input: $input) {
+      user {
+        id
+        email
+        permissions
+        roles
+        userProfile {
+          firstName
+          lastName
+        }
+      }
+      token
+      refreshToken
+      permissions
+      roles
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "input": {
+      "email": "victor@katabasegql.com",
+      "password": "dE8bdTUE"
+    }
+  }
+}
+
+docs {
+  # Login
+  
+  Authenticate a user with email and password.
+  
+  ## Response includes:
+  
+  - **token**: Access token (valid for 30 minutes) - use in Authorization header
+  - **refreshToken**: Refresh token (valid for 30 days) - use to get new access token
+  - **user**: User details
+  - **permissions**: List of permission strings
+  - **roles**: List of role names
+  
+  ## Important:
+  
+  - Store both `token` and `refreshToken` securely
+  - Use `token` for API requests in Authorization header: `Bearer <token>`
+  - When `token` expires (30 min), use `refreshToken` mutation to get new tokens
+  - Refresh tokens are rotated on each use for security
+}

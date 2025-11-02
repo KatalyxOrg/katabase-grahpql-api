@@ -1,0 +1,823 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>authentication: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">katalyx.fr/katabasegql/internal/authentication/jwt.go (91.7%)</option>
+				
+				<option value="file1">katalyx.fr/katabasegql/internal/authentication/middleware.go (93.0%)</option>
+				
+				<option value="file2">katalyx.fr/katabasegql/internal/authentication/refresh.go (80.0%)</option>
+				
+				<option value="file3">katalyx.fr/katabasegql/internal/authentication/service.go (81.1%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">no coverage</span>
+				<span class="cov1">low coverage</span>
+				<span class="cov2">*</span>
+				<span class="cov3">*</span>
+				<span class="cov4">*</span>
+				<span class="cov5">*</span>
+				<span class="cov6">*</span>
+				<span class="cov7">*</span>
+				<span class="cov8">*</span>
+				<span class="cov9">*</span>
+				<span class="cov10">high coverage</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package authentication
+
+import (
+        "errors"
+        "strings"
+        "time"
+
+        "github.com/golang-jwt/jwt"
+        "github.com/google/uuid"
+)
+
+func GenerateToken(secret string, id uint, ttl time.Duration) (string, string, error) <span class="cov10" title="23">{
+        secretKey := []byte(secret)
+        token := jwt.New(jwt.SigningMethodHS256)
+
+        jti := uuid.New().String()
+
+        claims := token.Claims.(jwt.MapClaims)
+        claims["id"] = id
+        claims["jti"] = jti
+        claims["exp"] = time.Now().Add(ttl).Unix()
+        claims["iat"] = time.Now().Unix()
+
+        tokenString, err := token.SignedString(secretKey)
+
+        if err != nil </span><span class="cov0" title="0">{
+                return "", "", err
+        }</span>
+
+        <span class="cov10" title="23">return tokenString, jti, nil</span>
+}
+
+func ParseToken(secret string, tokenString string) (uint, error) <span class="cov10" title="23">{
+        secretKey := []byte(secret)
+        tokenString = strings.TrimPrefix(tokenString, "Bearer ")
+
+        token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) </span><span class="cov8" title="15">{
+                return secretKey, nil
+        }</span>)
+
+        <span class="cov10" title="23">if err != nil </span><span class="cov7" title="11">{
+                return 0, err
+        }</span>
+
+        <span class="cov8" title="12">if claims, ok := token.Claims.(jwt.MapClaims); ok &amp;&amp; token.Valid </span><span class="cov8" title="12">{
+                if claims["id"] == nil || claims["id"] == "" </span><span class="cov2" title="2">{
+                        return 0, errors.New("invalid token")
+                }</span>
+
+                <span class="cov7" title="10">id := claims["id"].(float64)
+
+                return uint(id), nil</span>
+        } else<span class="cov0" title="0"> {
+                return 0, err
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package authentication
+
+import (
+        "context"
+        "net/http"
+
+        "github.com/99designs/gqlgen/graphql/handler/transport"
+        "katalyx.fr/katabasegql/config"
+        "katalyx.fr/katabasegql/pkg/database/dbmodel"
+)
+
+var UserCtxKey = contextKey{"user"}
+
+type contextKey struct {
+        name string
+}
+
+func Middleware(c *config.Config) func(http.Handler) http.Handler <span class="cov7" title="6">{
+        return func(next http.Handler) http.Handler </span><span class="cov7" title="6">{
+                return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov7" title="6">{
+                        header := r.Header.Get("Authorization")
+
+                        if header == "" </span><span class="cov1" title="1">{
+                                next.ServeHTTP(w, r)
+                                return
+                        }</span>
+
+                        <span class="cov6" title="5">tokenString := header
+                        userID, err := ParseToken(c.Constants.JWT.Secret, tokenString)
+
+                        if err != nil </span><span class="cov3" title="2">{
+                                http.Error(w, "Invalid token", http.StatusForbidden)
+                                return
+                        }</span>
+
+                        <span class="cov4" title="3">var user *dbmodel.User
+                        user, err = c.UserRepository.FindByID(userID, &amp;dbmodel.UserFieldsToInclude{
+                                UserProfile:       false,
+                                Roles:             true,
+                                Roles_Permissions: true,
+                        })
+
+                        if err != nil </span><span class="cov0" title="0">{
+                                next.ServeHTTP(w, r)
+                                return
+                        }</span>
+
+                        <span class="cov4" title="3">userCtx := context.WithValue(r.Context(), UserCtxKey, user)
+
+                        r = r.WithContext(userCtx)
+                        next.ServeHTTP(w, r)</span>
+                })
+        }
+}
+
+// WebsocketInitFunc handles WebSocket authentication during connection initialization
+func WebsocketInitFunc(ctx context.Context, initPayload transport.InitPayload, config *config.Config) (context.Context, *transport.InitPayload, error) <span class="cov7" title="6">{
+        // Try to get token from initPayload first (recommended approach)
+        var tokenString string
+
+        // Check if authorization is provided in the connection parameters
+        if auth, ok := initPayload["Authorization"]; ok </span><span class="cov4" title="3">{
+                if authStr, ok := auth.(string); ok </span><span class="cov4" title="3">{
+                        tokenString = authStr
+                }</span>
+        }
+
+        // Also check for "authorization" (case-insensitive)
+        <span class="cov7" title="6">if tokenString == "" </span><span class="cov4" title="3">{
+                if auth, ok := initPayload["authorization"]; ok </span><span class="cov1" title="1">{
+                        if authStr, ok := auth.(string); ok </span><span class="cov1" title="1">{
+                                tokenString = authStr
+                        }</span>
+                }
+        }
+
+        // Check for token in other common formats
+        <span class="cov7" title="6">if tokenString == "" </span><span class="cov3" title="2">{
+                if token, ok := initPayload["token"]; ok </span><span class="cov1" title="1">{
+                        if tokenStr, ok := token.(string); ok </span><span class="cov1" title="1">{
+                                tokenString = tokenStr
+                        }</span>
+                }
+        }
+
+        // If no token provided, return context without user (allows anonymous access)
+        <span class="cov7" title="6">if tokenString == "" </span><span class="cov1" title="1">{
+                return ctx, &amp;initPayload, nil
+        }</span>
+
+        // Parse the token
+        <span class="cov6" title="5">userID, err := ParseToken(config.Constants.JWT.Secret, tokenString)
+        if err != nil </span><span class="cov1" title="1">{
+                // Return error for invalid tokens
+                return ctx, nil, err
+        }</span>
+
+        // Load user from database
+        <span class="cov6" title="4">user, err := config.UserRepository.FindByID(userID, &amp;dbmodel.UserFieldsToInclude{
+                UserProfile:       false,
+                Roles:             true,
+                Roles_Permissions: true,
+        })
+
+        if err != nil || user == nil </span><span class="cov0" title="0">{
+                // Return error if user not found
+                return ctx, nil, err
+        }</span>
+
+        // Add user to context
+        <span class="cov6" title="4">userCtx := context.WithValue(ctx, UserCtxKey, user)
+
+        return userCtx, &amp;initPayload, nil</span>
+}
+
+func ForContext(ctx context.Context) *dbmodel.User <span class="cov10" title="12">{
+        rawUser, _ := ctx.Value(UserCtxKey).(*dbmodel.User)
+
+        return rawUser
+}</span>
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package authentication
+
+import (
+        "crypto/rand"
+        "crypto/sha256"
+        "encoding/base64"
+        "time"
+
+        "github.com/google/uuid"
+        "katalyx.fr/katabasegql/pkg/database/dbmodel"
+        "katalyx.fr/katabasegql/pkg/errormsg"
+)
+
+// GenerateRefreshToken generates a new refresh token for the given user
+// It returns the token string (to be sent to client), the family ID, and an error
+func (config *AuthenticationService) GenerateRefreshToken(userID uint, userAgent string, ipAddress string) (string, string, error) <span class="cov6" title="11">{
+        // Generate a cryptographically secure random token
+        tokenBytes := make([]byte, 32)
+        _, err := rand.Read(tokenBytes)
+        if err != nil </span><span class="cov0" title="0">{
+                return "", "", err
+        }</span>
+
+        <span class="cov6" title="11">token := base64.URLEncoding.EncodeToString(tokenBytes)
+
+        // Hash the token for storage
+        tokenHash, err := hashRefreshToken(token)
+        if err != nil </span><span class="cov0" title="0">{
+                return "", "", err
+        }</span>
+
+        // Generate a new family ID (used for rotation detection)
+        <span class="cov6" title="11">familyID := uuid.New().String()
+
+        // Create the refresh token record
+        refreshToken := &amp;dbmodel.RefreshToken{
+                UserID:    userID,
+                TokenHash: tokenHash,
+                FamilyID:  familyID,
+                ExpiresAt: time.Now().Add(config.Constants.JWT.RefreshTokenTTL),
+                UserAgent: userAgent,
+                IPAddress: ipAddress,
+        }
+
+        _, err = config.RefreshTokenRepository.Create(refreshToken)
+        if err != nil </span><span class="cov1" title="1">{
+                return "", "", err
+        }</span>
+
+        <span class="cov6" title="10">return token, familyID, nil</span>
+}
+
+// RotateRefreshToken rotates a refresh token by revoking the old one and creating a new one in the same family
+func (config *AuthenticationService) RotateRefreshToken(oldToken string, userAgent string, ipAddress string) (string, error) <span class="cov4" title="5">{
+        // Hash the provided token to find it in database
+        tokenHash, err := hashRefreshToken(oldToken)
+        if err != nil </span><span class="cov0" title="0">{
+                return "", err
+        }</span>
+
+        // Find the refresh token
+        <span class="cov4" title="5">dbToken, err := config.RefreshTokenRepository.FindByTokenHash(tokenHash)
+        if err != nil </span><span class="cov0" title="0">{
+                return "", err
+        }</span>
+
+        <span class="cov4" title="5">if dbToken == nil </span><span class="cov0" title="0">{
+                return "", &amp;errormsg.RefreshTokenInvalidError{}
+        }</span>
+
+        // Check if token is revoked
+        <span class="cov4" title="5">if dbToken.RevokedAt != nil </span><span class="cov1" title="1">{
+                // Token reuse detected - revoke entire family
+                config.RefreshTokenRepository.RevokeByFamilyID(dbToken.FamilyID)
+                return "", &amp;errormsg.RefreshTokenReuseDetectedError{}
+        }</span>
+
+        // Check if token is expired
+        <span class="cov4" title="4">if dbToken.ExpiresAt.Before(time.Now()) </span><span class="cov1" title="1">{
+                return "", &amp;errormsg.RefreshTokenExpiredError{}
+        }</span>
+
+        // Update last used timestamp
+        <span class="cov3" title="3">config.RefreshTokenRepository.UpdateLastUsed(dbToken.ID)
+
+        // Revoke the old token
+        err = config.RefreshTokenRepository.RevokeByID(dbToken.ID)
+        if err != nil </span><span class="cov0" title="0">{
+                return "", err
+        }</span>
+
+        // Generate new token bytes
+        <span class="cov3" title="3">tokenBytes := make([]byte, 32)
+        _, err = rand.Read(tokenBytes)
+        if err != nil </span><span class="cov0" title="0">{
+                return "", err
+        }</span>
+
+        <span class="cov3" title="3">newToken := base64.URLEncoding.EncodeToString(tokenBytes)
+
+        // Hash the new token for storage
+        newTokenHash, err := hashRefreshToken(newToken)
+        if err != nil </span><span class="cov0" title="0">{
+                return "", err
+        }</span>
+
+        // Create new refresh token in the same family
+        <span class="cov3" title="3">newRefreshToken := &amp;dbmodel.RefreshToken{
+                UserID:    dbToken.UserID,
+                TokenHash: newTokenHash,
+                FamilyID:  dbToken.FamilyID, // Keep same family ID for rotation tracking
+                ExpiresAt: time.Now().Add(config.Constants.JWT.RefreshTokenTTL),
+                UserAgent: userAgent,
+                IPAddress: ipAddress,
+        }
+
+        _, err = config.RefreshTokenRepository.Create(newRefreshToken)
+        if err != nil </span><span class="cov0" title="0">{
+                return "", err
+        }</span>
+
+        <span class="cov3" title="3">return newToken, nil</span>
+}
+
+// ValidateRefreshToken validates a refresh token and returns the associated user ID
+func (config *AuthenticationService) ValidateRefreshToken(token string) (uint, error) <span class="cov6" title="10">{
+        // Hash the provided token to find it in database
+        tokenHash, err := hashRefreshToken(token)
+        if err != nil </span><span class="cov0" title="0">{
+                return 0, err
+        }</span>
+
+        // Find the refresh token
+        <span class="cov6" title="10">dbToken, err := config.RefreshTokenRepository.FindByTokenHash(tokenHash)
+        if err != nil </span><span class="cov0" title="0">{
+                return 0, err
+        }</span>
+
+        <span class="cov6" title="10">if dbToken == nil </span><span class="cov3" title="3">{
+                return 0, &amp;errormsg.RefreshTokenInvalidError{}
+        }</span>
+
+        // Check if token is revoked
+        <span class="cov5" title="7">if dbToken.RevokedAt != nil </span><span class="cov1" title="1">{
+                return 0, &amp;errormsg.RefreshTokenRevokedError{}
+        }</span>
+
+        // Check if token is expired
+        <span class="cov5" title="6">if dbToken.ExpiresAt.Before(time.Now()) </span><span class="cov2" title="2">{
+                return 0, &amp;errormsg.RefreshTokenExpiredError{}
+        }</span>
+
+        <span class="cov4" title="4">return dbToken.UserID, nil</span>
+}
+
+// RevokeRefreshToken revokes a specific refresh token
+func (config *AuthenticationService) RevokeRefreshToken(token string) error <span class="cov2" title="2">{
+        tokenHash, err := hashRefreshToken(token)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov2" title="2">dbToken, err := config.RefreshTokenRepository.FindByTokenHash(tokenHash)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov2" title="2">if dbToken == nil </span><span class="cov1" title="1">{
+                return &amp;errormsg.RefreshTokenInvalidError{}
+        }</span>
+
+        <span class="cov1" title="1">return config.RefreshTokenRepository.RevokeByID(dbToken.ID)</span>
+}
+
+// RevokeAllUserRefreshTokens revokes all refresh tokens for a user (useful for logout all sessions)
+func (config *AuthenticationService) RevokeAllUserRefreshTokens(userID uint) error <span class="cov0" title="0">{
+        // Get all tokens for user
+        // This would require adding a method to find tokens by user ID
+        // For now, we'll implement revoking by family when we have a token
+        return nil
+}</span>
+
+// hashRefreshToken hashes a refresh token using SHA256 for secure storage
+// We use SHA256 instead of bcrypt because we need deterministic hashing for lookups
+func hashRefreshToken(token string) (string, error) <span class="cov10" title="52">{
+        // Use SHA256 for deterministic hashing (same input = same output)
+        // This allows us to look up tokens by hash in the database
+        hash := sha256.Sum256([]byte(token))
+        hashString := base64.URLEncoding.EncodeToString(hash[:])
+
+        return hashString, nil
+}</span>
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package authentication
+
+import (
+        "bytes"
+        "os"
+        "path/filepath"
+        "strconv"
+
+        "github.com/99designs/gqlgen/graphql"
+        "golang.org/x/crypto/bcrypt"
+        "katalyx.fr/katabasegql/config"
+        "katalyx.fr/katabasegql/graph/model"
+        "katalyx.fr/katabasegql/pkg/database/dbmodel"
+        "katalyx.fr/katabasegql/pkg/errormsg"
+        "katalyx.fr/katabasegql/pkg/helper"
+)
+
+// New creates a new instance of the authentication service with the given configuration.
+// It takes a configuration object as a parameter and returns a new instance of the authentication service.
+func New(config *config.Config) *AuthenticationService <span class="cov0" title="0">{
+        return &amp;AuthenticationService{config}
+}</span>
+
+// Login logs in a user with the given email and password.
+// It takes a string model.LoginInput as parameters and returns a (dbmodel.User, string, string, []dbmodel.Permission) object and an error.
+func (config *AuthenticationService) Login(input model.LoginInput, userAgent string, ipAddress string) (*dbmodel.User, string, string, []dbmodel.Permission, error) <span class="cov7" title="8">{
+        var dbUser *dbmodel.User
+        dbUser, err := config.UserRepository.FindByEmail(input.Email, &amp;dbmodel.UserFieldsToInclude{
+                Roles:             true,
+                Roles_Permissions: true,
+        })
+
+        if err != nil </span><span class="cov1" title="1">{
+                return nil, "", "", nil, err
+        }</span>
+
+        <span class="cov7" title="7">if dbUser == nil </span><span class="cov1" title="1">{
+                return nil, "", "", nil, &amp;errormsg.UserNotFoundError{}
+        }</span>
+
+        <span class="cov6" title="6">if !CheckPasswordHash(input.Password, *dbUser.PasswordHash) </span><span class="cov1" title="1">{
+                return nil, "", "", nil, &amp;errormsg.UserInvalidCredentialsError{}
+        }</span>
+
+        <span class="cov6" title="5">accessToken, _, err := GenerateToken(config.Constants.JWT.Secret, dbUser.ID, config.Constants.JWT.AccessTokenTTL)
+
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, "", "", nil, err
+        }</span>
+
+        <span class="cov6" title="5">refreshToken, _, err := config.GenerateRefreshToken(dbUser.ID, userAgent, ipAddress)
+
+        if err != nil </span><span class="cov1" title="1">{
+                return nil, "", "", nil, err
+        }</span>
+
+        <span class="cov5" title="4">dbPermissions := []dbmodel.Permission{}
+
+        for _, role := range dbUser.Roles </span><span class="cov1" title="1">{
+                dbPermissions = append(dbPermissions, role.Permissions...)
+        }</span>
+
+        <span class="cov5" title="4">return dbUser, accessToken, refreshToken, dbPermissions, nil</span>
+}
+
+// RefreshAccessToken validates a refresh token and generates a new access token and refresh token
+// It takes a refresh token string as a parameter and returns new access token, new refresh token, user, and permissions
+func (config *AuthenticationService) RefreshAccessToken(refreshToken string, userAgent string, ipAddress string) (*dbmodel.User, string, string, []dbmodel.Permission, error) <span class="cov6" title="6">{
+        // Validate the refresh token
+        userID, err := config.ValidateRefreshToken(refreshToken)
+        if err != nil </span><span class="cov4" title="3">{
+                return nil, "", "", nil, err
+        }</span>
+
+        // Get the user
+        <span class="cov4" title="3">dbUser, err := config.UserRepository.FindByID(userID, &amp;dbmodel.UserFieldsToInclude{
+                Roles:             true,
+                Roles_Permissions: true,
+        })
+
+        if err != nil </span><span class="cov1" title="1">{
+                return nil, "", "", nil, err
+        }</span>
+
+        <span class="cov3" title="2">if dbUser == nil </span><span class="cov1" title="1">{
+                return nil, "", "", nil, &amp;errormsg.UserNotFoundError{}
+        }</span>
+
+        // Rotate the refresh token (revoke old one, create new one)
+        <span class="cov1" title="1">newRefreshToken, err := config.RotateRefreshToken(refreshToken, userAgent, ipAddress)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, "", "", nil, err
+        }</span>
+
+        // Generate new access token
+        <span class="cov1" title="1">newAccessToken, _, err := GenerateToken(config.Constants.JWT.Secret, dbUser.ID, config.Constants.JWT.AccessTokenTTL)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, "", "", nil, err
+        }</span>
+
+        <span class="cov1" title="1">dbPermissions := []dbmodel.Permission{}
+
+        for _, role := range dbUser.Roles </span><span class="cov1" title="1">{
+                dbPermissions = append(dbPermissions, role.Permissions...)
+        }</span>
+
+        <span class="cov1" title="1">return dbUser, newAccessToken, newRefreshToken, dbPermissions, nil</span>
+}
+
+// CreateUser creates a new user with the given data.
+// It takes a model.NewUserInput object as a parameter and returns a dbmodel.User object and an error.
+func (config *AuthenticationService) CreateUser(input model.NewUserInput) (*dbmodel.User, error) <span class="cov7" title="9">{
+        exists, err := config.checkEmailExists(input.Email)
+
+        if err != nil </span><span class="cov1" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov7" title="8">if exists </span><span class="cov1" title="1">{
+                return nil, &amp;errormsg.UserEmailAlreadyExistsError{}
+        }</span>
+
+        <span class="cov7" title="7">var hashPassword *string
+
+        if input.Password != nil </span><span class="cov6" title="6">{
+                hash, err := HashPassword(*input.Password)
+
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, err
+                }</span>
+
+                <span class="cov6" title="6">hashPassword = &amp;hash</span>
+        }
+
+        // Get the default role (user)
+        <span class="cov7" title="7">dbDefaultRole, err := config.RoleRepository.FindByName("user")
+
+        if err != nil </span><span class="cov1" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov6" title="6">dbUser := &amp;dbmodel.User{
+                Email:        input.Email,
+                PasswordHash: hashPassword,
+                Roles:        []dbmodel.Role{*dbDefaultRole},
+                UserProfile: dbmodel.UserProfile{
+                        FirstName: input.UserProfile.FirstName,
+                        LastName:  input.UserProfile.LastName,
+                },
+        }
+
+        dbUser, err = config.UserRepository.Create(dbUser)
+
+        if err != nil </span><span class="cov1" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov6" title="5">return dbUser, nil</span>
+}
+
+// UpdateUser updates the user with the given data.
+// It takes an id and a map[string]interface{} object as parameters and returns a dbmodel.User object and an error.
+// It also takes the logged in user as a parameter to check if the user has the permission to update the user.
+func (config *AuthenticationService) UpdateUser(loggedInUser *dbmodel.User, id uint, changes map[string]interface{}) (*dbmodel.User, error) <span class="cov9" title="14">{
+        dbUser, err := config.UserRepository.FindByID(id, &amp;dbmodel.UserFieldsToInclude{
+                UserProfile: true,
+        })
+
+        if err != nil </span><span class="cov1" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov9" title="13">if dbUser == nil </span><span class="cov1" title="1">{
+                return nil, &amp;errormsg.UserNotFoundError{}
+        }</span>
+
+        <span class="cov8" title="12">if loggedInUser.ID != dbUser.ID </span><span class="cov5" title="4">{
+                if !loggedInUser.HasPermission("update:user") </span><span class="cov3" title="2">{
+                        return nil, &amp;errormsg.UserAccessDeniedError{}
+                }</span>
+        }
+
+        <span class="cov8" title="10">if changes["email"] != nil &amp;&amp; *changes["email"].(*string) != dbUser.Email </span><span class="cov4" title="3">{
+                exists, err := config.checkEmailExists(*changes["email"].(*string))
+
+                if err != nil </span><span class="cov1" title="1">{
+                        return nil, err
+                }</span>
+
+                <span class="cov3" title="2">if exists </span><span class="cov1" title="1">{
+                        return nil, &amp;errormsg.UserEmailAlreadyExistsError{}
+                }</span>
+
+                // TODO : Send a code to the new email and verify it
+                // Delete the email from the input
+        }
+
+        <span class="cov7" title="8">helper.ApplyChanges(changes, &amp;dbUser)
+
+        if changes["userProfile"] != nil </span><span class="cov6" title="6">{
+                userProfileChanges := changes["userProfile"].(map[string]interface{})
+                helper.ApplyChanges(userProfileChanges, &amp;dbUser.UserProfile)
+
+                if userProfileChanges["address"] != nil </span><span class="cov0" title="0">{
+                        dbAddress := &amp;dbmodel.Address{
+                                Number:        *userProfileChanges["address"].(map[string]interface{})["number"].(*string),
+                                Route:         *userProfileChanges["address"].(map[string]interface{})["route"].(*string),
+                                OptionalRoute: userProfileChanges["address"].(map[string]interface{})["optionalRoute"].(*string),
+                                City:          *userProfileChanges["address"].(map[string]interface{})["city"].(*string),
+                                ZipCode:       *userProfileChanges["address"].(map[string]interface{})["zipCode"].(*string),
+                                Country:       *userProfileChanges["address"].(map[string]interface{})["country"].(*string),
+
+                                Latitude:  userProfileChanges["address"].(map[string]interface{})["coordinates"].([]float64)[0],
+                                Longitude: userProfileChanges["address"].(map[string]interface{})["coordinates"].([]float64)[1],
+                        }
+
+                        dbAddress, err = config.AddressRepository.Create(dbAddress)
+
+                        if err != nil </span><span class="cov0" title="0">{
+                                return nil, err
+                        }</span>
+
+                        <span class="cov0" title="0">dbUser.UserProfile.AddressID = &amp;dbAddress.ID</span>
+                }
+        }
+
+        <span class="cov7" title="8">dbUser, err = config.UserRepository.Update(dbUser)
+
+        var avatar *graphql.Upload
+        if changes["userProfile"] != nil &amp;&amp; changes["userProfile"].(map[string]interface{})["avatar"] != nil </span><span class="cov0" title="0">{
+                avatar = changes["userProfile"].(map[string]interface{})["avatar"].(*graphql.Upload)
+        }</span>
+
+        <span class="cov7" title="8">if avatar != nil </span><span class="cov0" title="0">{
+                fileData := avatar.File
+                buffer := &amp;bytes.Buffer{}
+
+                buffer.ReadFrom(fileData)
+
+                logoData := buffer.Bytes()
+                userID := strconv.Itoa(int(dbUser.ID))
+                folderPath := filepath.Join(config.Constants.DataPath, "uploads", "users", userID)
+
+                os.MkdirAll(folderPath, os.ModePerm)
+
+                err = os.WriteFile(filepath.Join(folderPath, avatar.Filename), logoData, 0644)
+
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, err
+                }</span>
+
+                <span class="cov0" title="0">dbUser.UserProfile.AvatarName = &amp;avatar.Filename
+
+                dbUser, err = config.UserRepository.Update(dbUser)</span>
+        }
+
+        <span class="cov7" title="8">if err != nil </span><span class="cov1" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov7" title="7">return dbUser, nil</span>
+}
+
+// GetAllPermissions returns all permissions in the database.
+// It takes no parameters and returns a slice of dbmodel.Permission objects and an error.
+func (config *AuthenticationService) GetAllPermissions() ([]*dbmodel.Permission, error) <span class="cov3" title="2">{
+        dbPermissions, err := config.PermissionRepository.FindAll()
+
+        if err != nil </span><span class="cov1" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov1" title="1">return dbPermissions, nil</span>
+}
+
+// UpdatePermissionOverride adds a permission override to the user with the given data.
+// It takes a model.NewPermissionOverrideInput object as a parameter and returns a dbmodel.UserPermissionOverride object and an error.
+func (config *AuthenticationService) UpdatePermissionOverride(input model.NewPermissionOverrideInput) (*dbmodel.UserPermissionOverride, error) <span class="cov5" title="4">{
+        err := config.UserPermissionOverrideRepository.Delete(input.UserID, input.PermissionID)
+
+        if err != nil </span><span class="cov1" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov4" title="3">dbUserPermissionOverride := &amp;dbmodel.UserPermissionOverride{
+                UserID:       input.UserID,
+                PermissionID: input.PermissionID,
+                IsGranted:    input.IsGranted,
+        }
+
+        dbUserPermissionOverride, err = config.UserPermissionOverrideRepository.Create(dbUserPermissionOverride)
+
+        if err != nil </span><span class="cov1" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov3" title="2">return dbUserPermissionOverride, nil</span>
+}
+
+// checkEmailExists checks if the given email already exists in the database.
+// It takes an email string as a parameter and returns a boolean and an error.
+func (config *AuthenticationService) checkEmailExists(email string) (bool, error) <span class="cov8" title="12">{
+        dbUser, err := config.UserRepository.FindByEmail(email, nil)
+
+        if err != nil </span><span class="cov3" title="2">{
+                return false, err
+        }</span>
+
+        <span class="cov8" title="10">return dbUser != nil, nil</span>
+}
+
+// HashPassword hashes the specified password using bcrypt with a cost of 14 and returns the hashed password as a string.
+// It takes a string `password` as an argument and returns the hashed password as a string and an error.
+// If there is an error during the password hashing process, this function returns an empty string and the error. Otherwise, it returns the hashed password and `nil`.
+func HashPassword(password string) (string, error) <span class="cov10" title="17">{
+        bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+
+        return string(bytes), err
+}</span>
+
+// CheckPasswordHash checks if the specified password matches the specified hash by comparing the hash to the password using bcrypt.
+// It takes a string `password` and a string `hash` as arguments and returns a boolean value indicating whether the password matches the hash.
+// If the password matches the hash, this function returns `true`. Otherwise, it returns `false`.
+func CheckPasswordHash(password, hash string) bool <span class="cov8" title="10">{
+        err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+
+        if err != nil </span><span class="cov5" title="4">{
+                err = bcrypt.CompareHashAndPassword([]byte("$2y$10$poSHkg3pxj/exyAna/Z6Ruy4zY.eeCTggXPXwELypoy.P3mvdhpaG"), []byte(password))
+        }</span>
+        <span class="cov8" title="10">return err == nil</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

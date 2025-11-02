@@ -1,0 +1,69 @@
+meta {
+  name: Refresh Token
+  type: graphql
+  seq: 3
+}
+
+post {
+  url: {{host}}/query
+  body: graphql
+  auth: none
+}
+
+body:graphql {
+  mutation RefreshToken($refreshToken: String!) {
+    refreshToken(refreshToken: $refreshToken) {
+      user {
+        id
+        email
+        permissions
+        roles
+      }
+      token
+      refreshToken
+      permissions
+      roles
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "refreshToken": "rhr8tgikaTB7Piy4CKHmxmwSDR-7ByQrt2gUBmSdxkY="
+  }
+}
+
+docs {
+  # Refresh Token
+  
+  This mutation allows you to refresh an expired access token using a valid refresh token.
+  
+  ## How it works:
+  
+  1. When you login, you receive both an `token` (access token) and `refreshToken`
+  2. The access token expires after 30 minutes
+  3. When the access token expires, use this mutation with your refresh token
+  4. You'll receive a new access token and a new refresh token
+  5. The old refresh token is automatically revoked (rotation)
+  
+  ## Security Features:
+  
+  - **Refresh Token Rotation**: Each time you refresh, the old token is revoked and a new one is issued
+  - **Reuse Detection**: If an old refresh token is reused, all tokens in that family are revoked (security breach detected)
+  - **30-day Expiration**: Refresh tokens expire after 30 days of inactivity
+  - **Secure Storage**: Tokens are hashed in the database using bcrypt
+  
+  ## Usage:
+  
+  1. Copy the `refreshToken` from your login response
+  2. Replace `"your-refresh-token-here"` with your actual refresh token
+  3. Execute the mutation
+  4. Store the new `token` and `refreshToken` for future use
+  
+  ## Error Cases:
+  
+  - `invalid refresh token`: Token not found or format is incorrect
+  - `refresh token expired`: Token has expired (30 days)
+  - `refresh token revoked`: Token was manually revoked or logout
+  - `refresh token reuse detected`: Security breach - all tokens revoked
+}

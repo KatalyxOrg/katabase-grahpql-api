@@ -1,0 +1,30 @@
+directive @goField(forceResolver: Boolean, name: String, omittable: Boolean) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
+directive @hasPermission(permissions: [String!]!) on FIELD_DEFINITION
+directive @deprecated(reason: String) on FIELD_DEFINITION | INPUT_FIELD_DEFINITION | ENUM_VALUE
+
+scalar Time
+scalar Upload
+
+type PageInfo {
+  startCursor: ID!
+  endCursor: ID!
+  hasNextPage: Boolean!
+}
+
+input SortInput {
+  field: String!
+  order: String!
+}
+
+type Query {
+  me: User! @hasPermission(permissions: ["read:user:self"])
+  permissions: [Permission!]! @hasPermission(permissions: ["read:permission:all"])
+}
+
+type Mutation {
+  login(input: LoginInput!): LoginResult!
+  refreshToken(refreshToken: String!): LoginResult!
+  createUser(input: NewUserInput!): User!
+  updateUser(id: ID!, input: UpdateUserInput!): User! @hasPermission(permissions: ["update:user", "update:user:self"])
+  updatePermissionOverride(input: NewPermissionOverrideInput!): Boolean! @hasPermission(permissions: ["update:permission_override"])
+}

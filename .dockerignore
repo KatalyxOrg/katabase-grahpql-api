@@ -1,0 +1,52 @@
+# Git
+.git
+.gitignore
+.github
+
+# Documentation
+README.md
+DEPLOYMENT.md
+*.md
+
+# Development files
+.vscode
+.idea
+*.log
+*.tmp
+
+# Test files
+*_test.go
+coverage.out
+gosec-report.json
+
+# Development config
+config.yml
+.env
+.env.local
+.env.dev
+
+# Bruno API client
+bruno/
+
+# Build artifacts
+echocircle-api
+server
+
+# Docker
+docker-compose.yml
+docker-compose.*.yml
+Dockerfile
+Dockerfile.*
+.dockerignore
+
+# Backups and data
+backups/
+uploads/
+data/
+
+# Scripts (except for production)
+scripts/
+Makefile
+
+# Dependencies (handled by go mod)
+vendor/
